@@ -1,0 +1,10 @@
+
+    %isClique(S):- 
+    %findall([V1,V2], (member(V1,S), member(V2,S), V1 \= V2), L), 
+    %member([A1,A2],L), edge(A1,A2).
+  
+%isClique(S):- 
+    %minCliqueSize(MIN), length(S,L), L >= MIN,
+    %findall(edge(V1,V2), (member(V1,S), member(V2,S), V1 \= V2), A),
+    %length(A,AL), write(AL), AL >= (L*(L-1)).
+     

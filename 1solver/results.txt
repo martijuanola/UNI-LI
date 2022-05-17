@@ -1,0 +1,45 @@
+p -> picosat
+t -> template
+
+1 -> matriu de bools per OL sense signe(PROPAGACIÓ)
+2 -> vector de clausules per OL sense signe(PROPAGACIÓ)
+3 -> PROPAGACIÓ  del 2 + heurística de count estàtic
+4-> com el 3 però provocant més conflictes
+5-> prova d'optimitzar propagació sobre el 4(NO FUNCIONA)
+6-> Activity Based sobre el 4
+7-> ?
+8 -> moure count a next literal | 7 + conflictes ordenats per l'heurístic
+
+100:
+
+t: 0-2-0-7-6-1-1-1-4-1
+1: 1-1-1-5-4-2-0-1-3-1(ERROR!)
+1: 0-1-0-2-2-0-0-0-2-0
+2: 0-1-0-1-0-0-0-0-0-0 3
+3: 0-0-0-0-0-0-0-0-0-0 2
+p: 0-0-0-0-0-0-0-0-0-0 1
+
+
+200:
+3: 3-3-0-4-1-6-*-9-0-2
+4: 4-3-1-4-1-5-4-9-3-0 3
+5: 5-4-3-5-2-8-5-*-5-0
+6: *-*-0-8-5-5-*-*-6-0
+6: *-*-1-8-5-4-9-*-6-0
+6: 8-7-0-6-2-3-*-*-2-1
+7: 7-5-0-5-1-2-6-*-2-0
+8: 1-2-1-1-1-1-2-2-0-0 2
+p: 0-1-0-1-0-0-0-1-0-0 1
+
+300:
+
+4: ********
+6: ********
+8: 138-030-132-081-169-116-074-124-164-037
+p: 018-005-021-009-013-021-007-002-015-005
+
+
+Percentatges del 8 respecte picosat
+
+8: x8 + x6 + x7 + x9 + x13! + x11! + x62!! + x11! + x8
+
