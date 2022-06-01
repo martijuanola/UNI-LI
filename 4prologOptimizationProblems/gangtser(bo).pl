@@ -1,4 +1,3 @@
-symbolicOutput(0).  % set to 1 to see symbolic output only; 0 otherwise.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % To use this prolog template for other optimization problems, replace the code parts 1,2,3,4 below. %
@@ -62,12 +61,22 @@ blocked(G,H):-     notAvailable(G,L), member(H,L).
 available(G,H):-   hour(H), gangster(G), \+blocked(G,H).
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 1.- Declare SAT variables to be used
 
-satVariable( does(G,T,H) ):- gangster(G), task(T), hour(H).  %  means:  "gangster G does task T at hour H"     (MANDATORY)
-satVariable( works(G,H) ):- gangster(G), hour(H).
+satVariable( does(G,T,H) ):- 
+    gangster(G), 
+    task(T),
+    hour(H).%  means:  "gangster G does task T at hour H"     (MANDATORY)
+
+satVariable(works(G, H)):-
+    gangster(G),
+    hour(H). % means: "gangster G works at hour H"
+    
+    
+symbolicOutput(0).  % set to 1 to see symbolic output only; 0 otherwise.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 2. This predicate writeClauses(MaxCost) generates the clauses that guarantee that
@@ -75,46 +84,66 @@ satVariable( works(G,H) ):- gangster(G), hour(H).
 
 writeClauses(infinite):- !, writeClauses(72),!.
 writeClauses(MaxConsecutiveHours):-
-    atMostMaxConsecutiveTasks(MaxConsecutiveHours),
-    worksAndDoes,
-    exactlyOneTaskPerHourPerGangster,
-    exactlyTasksPerHour,
-    noImmediateChangeOfTasksByGangster,
-    noTasksWhenGangsterIsNotAvailable,
+    associateVariables,
+    gangsterOneJobAtSameTime,
+    gangsterNoConsecutiveDifferent,
+    gangsterNotAvaliable,
+    allTasksDone,
+    maximumConsecutive(MaxConsecutiveHours),
     true,!.
 writeClauses(_):- told, nl, write('writeClauses failed!'), nl,nl, halt.
 
-worksAndDoes:-
-    available(G,H), findall(does(G,T,H), task(T), Lits),
-    expressOr(works(G,H),Lits), fail.
-worksAndDoes.
+associateVariables:-
+    gangster(G),
+    hour(H),
+    findall(does(G, T, H), task(T), Lits),
+    expressOr(works(G, H), Lits),
+    fail.
+associateVariables.
 
-exactlyOneTaskPerHourPerGangster:-
-    gangster(G), hour(H), findall(does(G,T,H), task(T), Lits),
-    atMost(1, Lits), fail.
-exactlyOneTaskPerHourPerGangster.
+gangsterOneJobAtSameTime:-
+    gangster(G),
+    hour(H),
+    findall(does(G, T, H), task(T), Lits),
+    atMost(1, Lits), 
+    fail.
+gangsterOneJobAtSameTime.
 
-exactlyTasksPerHour:-
-    task(T), hour(H), needed(T,H,N), findall(does(G,T,H), gangster(G), Lits),
-     exactly(N, Lits), fail.
-exactlyTasksPerHour.
+gangsterNoConsecutiveDifferent:-
+    gangster(G),
+    hour(H),
+    H < 72,
+    H1 is H+1,
+    task(T),
+    writeClause([-does(G, T, H), does(G, T, H1), -works(G, H1)]),
+    fail.
+gangsterNoConsecutiveDifferent.
 
-noTasksWhenGangsterIsNotAvailable:-
-    gangster(G), findall(works(G,H), blocked(G,H), Lits),
-    atMost(0,Lits), fail.
-noTasksWhenGangsterIsNotAvailable.
+gangsterNotAvaliable:-
+    gangster(G),
+    findall(works(G, H), blocked(G, H), Lits),
+    atMost(0, Lits),
+    fail.
+gangsterNotAvaliable.
 
-noImmediateChangeOfTasksByGangster:-
-    gangster(G), hour(H1), hour(H2), H2 is H1 + 1,
-    task(T1), task(T2), T1 \= T2,
-    writeClause([-does(G,T1,H1),-does(G,T2,H2)]), fail.
-noImmediateChangeOfTasksByGangster.
+allTasksDone:-
+    hour(H),
+    task(T),
+    needed(T, H, N),
+    findall(does(G, T, H), gangster(G), Lits),
+    exactly(N, Lits),
+    fail.
+allTasksDone.
 
-
-atMostMaxConsecutiveTasks(N):-
-    gangster(G), hour(H1), hour(H2), H2 is H1 + N - 1,
-    findall(-works(G,H), (between(H1,H2, H)), Lits), writeClause(Lits), fail.
-atMostMaxConsecutiveTasks(_).
+maximumConsecutive(MaxConsecutiveHours):-
+    gangster(G),
+    hour(H), %Hora inicio window
+    H =< 72-MaxConsecutiveHours+1,
+    Hend is H+MaxConsecutiveHours-1,
+    findall(-works(G, H1), between(H, Hend, H1), Lits),
+    writeClause(Lits),
+    fail.
+maximumConsecutive(_).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3. This predicate displays a given solution M:
@@ -132,36 +161,33 @@ writeIfBusy(_,_,_):- write('-'),!.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 4. This predicate computes the cost of a given solution M:
-
-
 first([F|_], F).
 
+subsequence([], []).
+subsequence([L|LS], [L|RS]):-
+    subsq2(LS, RS).
+subsequence([_|LS], R):-
+    subsequence(LS, R).
+
+subsq2(_, []).
+subsq2([L|LS], [R|RS]):-
+    R is L,
+    subsq2(LS, RS).
+
+% 4. This predicate computes the cost of a given solution M:
 % Here the sort predicate is used to remove repeated elements of the list:
-costOfThisSolution(M,Cost):-
-    between(0,71,N), Cost is 72 - N, 
-    gangster(G), findall(H, member(works(G,H), M), L), sort(L, L2),
-    append(SUB,_,L2), append(_,SUB2,SUB), length(SUB2,Cost),
-    first(SUB2, First), last(SUB2, Last), Last is First + Cost - 1.
+costOfThisSolution(M,Cost):- 
+   between(0,71,N),
+   Cost is 72-N, %Important: check cost in descending order
+   gangster(G),
+   findall(H, member(works(G,H), M), Lits),
+   sort(Lits, L), %Lits contains all hours worked by a gangster
 
-
-
-
-
-%%     findall((G,H,T), member(does(G,T,H), M), L),
-%%     sort(L, LS), write(L), write(" - "), write(LS), Cost is 0.
-
-%% longestInList([X],X):- !.
-%% longestInList([H|T],H):-
-%%     longestInList(T,RS), length(H, L1), length(RS, L2),
-%%     L1 >= L2, !.
-%% longestInList([H|T],RS):-
-%%     longestInList(T,RS), length(H, L1), length(RS, L2),
-%%     L1 =< L2, !.
-
-%% allEqual([]).
-%% allEqual([_]):- !.
-%% allEqual([A,B|L]) :- A is B, allEqual([B|L]), !.
+   subsequence(L, Seg), %Seg is a subsequence of L
+   length(Seg, Cost),
+   first(Seg, First),
+   last(Seg, Last),
+   Last is First + Cost - 1. %Check that there are no spaces between First and last
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

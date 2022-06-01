@@ -254,7 +254,12 @@ log2(B, N, L) :-
 
 
 
+%% PROBLEMA ANGEL
+ocurrencies(X,L,O):- auxOcurrencies(X,L,O,0).
 
+auxOcurrencies(_,[],[],_).
+auxOcurrencies(X,[X|L],[N|O2],N):- N2 is N+1, auxOcurrencies(X,L,O2,N2), !.
+auxOcurrencies(X,[_|L],O,N):- N2 is N+1, auxOcurrencies(X,L,O,N2).
 
 
 
