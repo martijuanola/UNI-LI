@@ -36,16 +36,49 @@ ejemplo(6,175,[81,64,56,55,51,43,39,38,35,33,31,30,29,20,18,16,14,9,8,5,4,3,2,1]
 
 
 main:- 
-    ejemplo(3,Big,Sides),
+    ejemplo(2,Big,Sides),
     nl, write('Fitting all squares of size '), write(Sides), write(' into big square of size '), write(Big), nl,nl,
-    length(Sides,N), 
+    length(Sides,N),
+
+%% DEF VARIABLES
     length(RowVars,N), % get list of N prolog vars: Row coordinates of each small square
-    ...
-    insideBigSquare(N,Big,Sides,RowVars),
-    insideBigSquare(N,Big,Sides,ColVars),
-    nonoverlapping(N,Sides,RowVars,ColVars),
-    ...
+    length(ColVars,N),
+
+%% DOMAINS
+    insideBigSquare(Big,Sides,RowVars),
+    insideBigSquare(Big,Sides,ColVars),
+
+%% CONSTRAINTS
+    nonoverlapping(Sides,RowVars,ColVars),
+    
+%% LABEL
+    %% append(RowVars,ColVars,SOL),
+    %% labeling([ff],SOL),
+    labeling([ff],RowVars), labeling([ff],ColVars),
+
+%% PRINT SOLUTION
     displaySol(Big,Sides,RowVars,ColVars), halt.
+
+insideBigSquare(_,[],[]):-!.
+insideBigSquare(Big,[S|ST],[C|CT]) :-
+    M is Big-S+1,
+    C in 1..M,
+    insideBigSquare(Big,ST,CT).
+
+nonoverlapping([],[],[]):-!.
+nonoverlapping([S|ST],[R|RT],[C|CT]) :-
+    nonoverlappingWithOne(S,R,C,ST,RT,CT),
+    nonoverlapping(ST,RT,CT).
+
+nonoverlappingWithOne(_,_,_,[],[],[]):-!.
+nonoverlappingWithOne(S,R,C,[S2|ST],[R2|RT],[C2|CT]) :-
+    nonoverlappingTwo(S,R,C,S2,R2,C2), nonoverlappingWithOne(S,R,C,ST,RT,CT).
+
+nonoverlappingTwo(S,R,C,S2,R2,C2):-
+    #\ (R+S #> R2 #/\
+        R-S2 #< R2 #/\
+        C+S #> C2 #/\
+        C-S2 #< C2).
 
 
 displaySol(N,Sides,RowVars,ColVars):- 
